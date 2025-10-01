@@ -50,6 +50,10 @@ export default {
       failed: 'Failed',
       pending: 'Pending',
     },
+    liveOutput: 'Live output',
+    awaitingResponse: 'Waiting for the model to respond…',
+    processing: 'Processing…',
+    submitButton: 'Submit',
   },
   leaderboard: {
     title: 'Leaderboard',

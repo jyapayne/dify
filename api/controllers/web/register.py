@@ -16,7 +16,7 @@ class WebRegisterApi(Resource):
         name = payload.get('name') or 'Player'
         password = payload.get('password')
         if not email or not password:
-            return { 'result': 'bad_request' }, 400
+            return {'result': 'bad_request'}, 400
         account = RegisterService.register(
             email=email,
             name=name,
@@ -25,6 +25,6 @@ class WebRegisterApi(Resource):
             create_workspace_required=False,
         )
         db.session.commit()
-        return { 'result': 'success', 'data': { 'account_id': account.id } }, 201
+        return {'result': 'success', 'data': {'account_id': account.id}}, 201
 
 

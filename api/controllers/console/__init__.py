@@ -44,6 +44,10 @@ from . import (
     version,
 )
 
+# Import custom challenge controllers
+from . import challenges as challenges
+from . import red_blue_challenges as red_blue_challenges
+
 # Import app controllers
 from .app import (
     advanced_prompt_template,
@@ -129,10 +133,6 @@ from .workspace import (
     workspace,
 )
 
-# Import custom challenge controllers
-from . import challenges as challenges
-from . import red_blue_challenges as red_blue_challenges
-
 api.add_namespace(console_ns)
 
 __all__ = [
@@ -149,6 +149,7 @@ __all__ = [
     "audio",
     "billing",
     "bp",
+    "challenges",
     "completion",
     "compliance",
     "console_ns",
@@ -193,6 +194,7 @@ __all__ = [
     "rag_pipeline_import",
     "rag_pipeline_workflow",
     "recommended_app",
+    "red_blue_challenges",
     "saved_message",
     "setup",
     "site",
@@ -208,6 +210,4 @@ __all__ = [
     "workflow_run",
     "workflow_statistic",
     "workspace",
-    "challenges",
-    "red_blue_challenges",
 ]

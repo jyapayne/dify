@@ -1,14 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'next/navigation'
 import { RiCheckLine, RiCloseLine, RiLoader4Line } from '@remixicon/react'
-import { fetchChallengeDetail, fetchChallengeLeaderboard, submitChallengeAttempt } from '@/service/challenges'
 import Leaderboard from '@/app/components/challenge/leaderboard'
 import Button from '@/app/components/base/button'
 import Textarea from '@/app/components/base/textarea'
 import Toast from '@/app/components/base/toast'
+import { fetchChallengeDetail, fetchChallengeLeaderboard, submitChallengeAttempt } from '@/service/challenges'
 
 export default function ChallengeDetailPage() {
   const { t } = useTranslation()
@@ -21,6 +21,9 @@ export default function ChallengeDetailPage() {
   const [submitting, setSubmitting] = useState(false)
   const [userInput, setUserInput] = useState('')
   const [lastResult, setLastResult] = useState<{ success: boolean; message?: string; rating?: number } | null>(null)
+  const [streamingText, setStreamingText] = useState('')
+  const [hasStreamingResult, setHasStreamingResult] = useState(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -43,6 +46,18 @@ export default function ChallengeDetailPage() {
       load()
   }, [id])
 
+  const stopStreaming = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+    setHasStreamingResult(false)
+  }, [])
+
+  useEffect(() => () => {
+    stopStreaming()
+  }, [stopStreaming])
+
   const handleSubmit = async () => {
     if (!userInput.trim()) {
       Toast.notify({ type: 'error', message: 'Please enter a response' })
@@ -53,40 +68,44 @@ export default function ChallengeDetailPage() {
       Toast.notify({ type: 'error', message: 'Challenge is not configured with an app' })
       return
     }
-
+    stopStreaming()
     setSubmitting(true)
     setLastResult(null)
+    setStreamingText('')
+    setHasStreamingResult(false)
     try {
-      // Execute the workflow with the user's input
-      // Endpoint varies by app type (chat vs workflow)
       const result = await submitChallengeAttempt(
         id,
         challenge.app_id,
         challenge.app_site_code,
         challenge.app_mode || 'workflow',
         userInput,
+        {
+          onStreamUpdate: (text) => {
+            setStreamingText(text)
+            setHasStreamingResult(true)
+          },
+          onAbortController: (controller) => {
+            abortControllerRef.current = controller
+          },
+          onError: (message) => {
+            setHasStreamingResult(false)
+            setStreamingText('')
+            Toast.notify({ type: 'error', message })
+          },
+        },
       )
 
-      // Extract challenge results from workflow output
-      // Response structure differs by app mode:
-      // - Chat apps: result.data.answer + result.data.metadata.outputs
-      // - Workflow apps: result.data (direct outputs)
-      const isChatApp = challenge.app_mode === 'chat' || challenge.app_mode === 'advanced-chat'
-      const workflowOutputs = isChatApp
-        ? (result.data?.metadata?.outputs || {})
-        : (result.data || {})
-
-      const success = workflowOutputs.challenge_succeeded || false
-      const rating = workflowOutputs.judge_rating
-      const feedback = workflowOutputs.judge_feedback || workflowOutputs.message || result.data?.answer
+      setHasStreamingResult(false)
+      setStreamingText(result.rawText)
 
       setLastResult({
-        success,
-        message: feedback || (success ? 'Challenge passed!' : 'Challenge not passed.'),
-        rating,
+        success: result.success,
+        message: result.message,
+        rating: result.rating,
       })
 
-      if (success) {
+      if (result.success) {
         Toast.notify({ type: 'success', message: 'Challenge completed!' })
         // Refresh leaderboard
         const leaders = await fetchChallengeLeaderboard(id)
@@ -95,7 +114,12 @@ export default function ChallengeDetailPage() {
     }
     catch (e: any) {
       console.error('Submission error:', e)
-      Toast.notify({ type: 'error', message: e.message || 'Submission failed' })
+      setHasStreamingResult(false)
+      setStreamingText('')
+      if (e?.name === 'AbortError')
+        return
+      if (!e?.__handled)
+        Toast.notify({ type: 'error', message: e.message || 'Submission failed' })
     }
     finally {
       setSubmitting(false)
@@ -156,18 +180,32 @@ export default function ChallengeDetailPage() {
                 type='primary'
                 onClick={handleSubmit}
                 loading={submitting}
-                disabled={!userInput.trim()}
+                disabled={submitting || !userInput.trim()}
                 className='w-full'
               >
                 {submitting ? (
                   <>
                     <RiLoader4Line className='mr-2 h-4 w-4 animate-spin' />
-                    {t('common.operation.processing')}
+                    {t('challenges.player.processing', 'Processing…')}
                   </>
                 ) : (
-                  t('challenges.player.submit')
+                  t('challenges.player.submitButton', 'Submit')
                 )}
               </Button>
+
+              {(hasStreamingResult || streamingText) && (
+                <div className='bg-components-panel-bg/60 mt-4 rounded-lg border border-divider-subtle p-4'>
+                  <div className='flex items-center gap-2 text-sm font-medium text-text-secondary'>
+                    {t('challenges.player.liveOutput')}
+                    {hasStreamingResult && (
+                      <RiLoader4Line className='h-4 w-4 animate-spin text-text-tertiary' />
+                    )}
+                  </div>
+                  <div className='mt-2 whitespace-pre-wrap text-sm text-text-primary'>
+                    {streamingText || t('challenges.player.awaitingResponse')}
+                  </div>
+                </div>
+              )}
 
               {lastResult && (
                 <div className={`mt-4 rounded-lg border p-4 ${lastResult.success ? 'border-util-colors-green-green-500 bg-util-colors-green-green-50' : 'border-util-colors-orange-orange-500 bg-util-colors-orange-orange-50'}`}>

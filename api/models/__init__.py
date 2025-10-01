@@ -9,6 +9,7 @@ from .account import (
     TenantStatus,
 )
 from .api_based_extension import APIBasedExtension, APIBasedExtensionPoint
+from .challenge import Challenge, ChallengeAttempt
 from .dataset import (
     AppDatasetJoin,
     Dataset,
@@ -68,6 +69,7 @@ from .provider import (
     TenantDefaultModel,
     TenantPreferredModelProvider,
 )
+from .red_blue import RedBlueChallenge, TeamPairing, TeamSubmission
 from .source import DataSourceApiKeyAuthBinding, DataSourceOauthBinding
 from .task import CeleryTask, CeleryTaskSet
 from .tools import (
@@ -91,8 +93,6 @@ from .workflow import (
     WorkflowRun,
     WorkflowType,
 )
-from .challenge import Challenge, ChallengeAttempt
-from .red_blue import RedBlueChallenge, TeamSubmission, TeamPairing
 
 __all__ = [
     "APIBasedExtension",
@@ -113,6 +113,8 @@ __all__ = [
     "BuiltinToolProvider",
     "CeleryTask",
     "CeleryTaskSet",
+    "Challenge",
+    "ChallengeAttempt",
     "Conversation",
     "ConversationVariable",
     "CreatorUserRole",
@@ -154,10 +156,13 @@ __all__ = [
     "ProviderQuotaType",
     "ProviderType",
     "RecommendedApp",
+    "RedBlueChallenge",
     "SavedMessage",
     "Site",
     "Tag",
     "TagBinding",
+    "TeamPairing",
+    "TeamSubmission",
     "Tenant",
     "TenantAccountJoin",
     "TenantAccountRole",
@@ -183,9 +188,4 @@ __all__ = [
     "WorkflowRunTriggeredFrom",
     "WorkflowToolProvider",
     "WorkflowType",
-    "Challenge",
-    "ChallengeAttempt",
-    "RedBlueChallenge",
-    "TeamSubmission",
-    "TeamPairing",
 ]

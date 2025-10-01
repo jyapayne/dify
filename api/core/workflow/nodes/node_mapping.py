@@ -4,6 +4,7 @@ from core.workflow.enums import NodeType
 from core.workflow.nodes.agent.agent_node import AgentNode
 from core.workflow.nodes.answer.answer_node import AnswerNode
 from core.workflow.nodes.base.node import Node
+from core.workflow.nodes.challenge_evaluator.node import ChallengeEvaluatorNode
 from core.workflow.nodes.code import CodeNode
 from core.workflow.nodes.datasource.datasource_node import DatasourceNode
 from core.workflow.nodes.document_extractor import DocumentExtractorNode
@@ -11,6 +12,7 @@ from core.workflow.nodes.end.end_node import EndNode
 from core.workflow.nodes.http_request import HttpRequestNode
 from core.workflow.nodes.if_else import IfElseNode
 from core.workflow.nodes.iteration import IterationNode, IterationStartNode
+from core.workflow.nodes.judging_llm.node import JudgingLLMNode
 from core.workflow.nodes.knowledge_index import KnowledgeIndexNode
 from core.workflow.nodes.knowledge_retrieval import KnowledgeRetrievalNode
 from core.workflow.nodes.list_operator import ListOperatorNode
@@ -19,14 +21,12 @@ from core.workflow.nodes.loop import LoopEndNode, LoopNode, LoopStartNode
 from core.workflow.nodes.parameter_extractor import ParameterExtractorNode
 from core.workflow.nodes.question_classifier import QuestionClassifierNode
 from core.workflow.nodes.start import StartNode
+from core.workflow.nodes.team_challenge.node import TeamChallengeNode
 from core.workflow.nodes.template_transform import TemplateTransformNode
 from core.workflow.nodes.tool import ToolNode
 from core.workflow.nodes.variable_aggregator import VariableAggregatorNode
 from core.workflow.nodes.variable_assigner.v1 import VariableAssignerNode as VariableAssignerNodeV1
 from core.workflow.nodes.variable_assigner.v2 import VariableAssignerNode as VariableAssignerNodeV2
-from core.workflow.nodes.challenge_evaluator.node import ChallengeEvaluatorNode
-from core.workflow.nodes.judging_llm.node import JudgingLLMNode
-from core.workflow.nodes.team_challenge.node import TeamChallengeNode
 
 LATEST_VERSION = "latest"
 

@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from extensions.ext_database import db
-from models.challenge import Challenge, ChallengeAttempt
+from models.challenge import ChallengeAttempt
 
 
 class ChallengeService:

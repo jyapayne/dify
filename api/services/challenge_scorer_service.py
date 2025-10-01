@@ -62,7 +62,7 @@ class ChallengeScorerService:
                 raise ValueError("Scorer must return a dict with 'score' key")
             return result
         except Exception as e:
-            logger.error(f"Scorer plugin {scorer_plugin_id} failed: {e}", exc_info=True)
+            logger.error("Scorer plugin %s failed: %s", scorer_plugin_id, e, exc_info=True)
             raise ValueError(f"Scorer plugin execution failed: {e}")
 
     @classmethod
@@ -99,11 +99,11 @@ class ChallengeScorerService:
 
             # Cache it
             cls._plugin_cache[cache_key] = scorer
-            logger.info(f"Loaded scorer plugin: {plugin_id} from {entrypoint}")
+            logger.info("Loaded scorer plugin: %s from %s", plugin_id, entrypoint)
             return scorer
 
         except Exception as e:
-            logger.error(f"Failed to load scorer plugin {plugin_id}:{entrypoint}: {e}", exc_info=True)
+            logger.error("Failed to load scorer plugin %s:%s: %s", plugin_id, entrypoint, e, exc_info=True)
             return None
 
     @classmethod

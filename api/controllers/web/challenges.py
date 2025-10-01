@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from flask_restx import Resource
+from sqlalchemy import select
 
 from controllers.web import web_ns
 from extensions.ext_database import db
-from sqlalchemy import select
-
 from models.challenge import Challenge, ChallengeAttempt
 from models.model import App, Site
 

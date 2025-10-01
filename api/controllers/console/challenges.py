@@ -7,9 +7,8 @@ from controllers.console.wraps import (
     account_initialization_required,
     setup_required,
 )
-from libs.login import login_required
 from extensions.ext_database import db
-from libs.login import current_user
+from libs.login import current_user, login_required
 from models.challenge import Challenge
 
 
@@ -72,7 +71,7 @@ class ChallengeListCreateApi(Resource):
         c.app_id = args["app_id"]
         # Convert empty string to None for UUID field
         workflow_id = args.get("workflow_id")
-        c.workflow_id = workflow_id if workflow_id else None
+        c.workflow_id = workflow_id or None
         c.name = args["name"]
         c.description = args.get("description")
         c.goal = args.get("goal")
