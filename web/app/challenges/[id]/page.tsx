@@ -54,6 +54,14 @@ export default function ChallengeDetailPage() {
     setHasStreamingResult(false)
   }, [])
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflowY
+    document.body.style.overflowY = 'auto'
+    return () => {
+      document.body.style.overflowY = previousOverflow
+    }
+  }, [])
+
   useEffect(() => () => {
     stopStreaming()
   }, [stopStreaming])
@@ -80,6 +88,7 @@ export default function ChallengeDetailPage() {
         challenge.app_site_code,
         challenge.app_mode || 'workflow',
         userInput,
+        challenge.goal,
         {
           onStreamUpdate: (text) => {
             setStreamingText(text)
@@ -99,9 +108,24 @@ export default function ChallengeDetailPage() {
       setHasStreamingResult(false)
       setStreamingText(result.rawText)
 
+      const judgeFeedback = typeof result.outputs?.judge_feedback === 'string' && result.outputs.judge_feedback.trim().length > 0
+        ? result.outputs.judge_feedback
+        : (typeof result.message === 'string' && result.message.trim().length > 0 ? result.message : undefined)
+      const fallbackExplanation = typeof result.outputs?.message === 'string' && result.outputs.message.trim().length > 0
+        ? result.outputs.message
+        : ''
+      const successFallback = t('challenges.player.defaultSuccessMessage', 'Challenge passed!')
+      const failureFallback = t('challenges.player.defaultFailureMessage', 'Challenge not passed.')
+      const judgeFeedbackLine = judgeFeedback
+        ? t('challenges.player.judgeFeedbackLine', { feedback: judgeFeedback, defaultValue: `${judgeFeedback}` })
+        : ''
+      const combinedMessage = result.success
+        ? [judgeFeedback || fallbackExplanation || successFallback].filter(Boolean).join('\n')
+        : [judgeFeedbackLine || fallbackExplanation || failureFallback].filter(Boolean).join('\n')
+
       setLastResult({
         success: result.success,
-        message: result.message,
+        message: combinedMessage,
         rating: result.rating,
       })
 
@@ -143,7 +167,7 @@ export default function ChallengeDetailPage() {
   }
 
   return (
-    <div className='min-h-screen bg-components-panel-bg'>
+    <div className='min-h-screen overflow-y-auto bg-components-panel-bg'>
       <div className='mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8'>
         <div className='mb-8'>
           <h1 className='mb-2 text-3xl font-bold text-text-primary'>{challenge.name}</h1>
@@ -220,7 +244,7 @@ export default function ChallengeDetailPage() {
                         {lastResult.success ? t('challenges.player.status.success') : t('challenges.player.status.failed')}
                       </div>
                       {lastResult.message && (
-                        <div className='text-sm text-text-secondary'>{lastResult.message}</div>
+                        <div className='whitespace-pre-wrap text-sm text-text-secondary'>{lastResult.message}</div>
                       )}
                       {lastResult.rating !== undefined && (
                         <div className='mt-2 text-sm text-text-tertiary'>

@@ -148,6 +148,8 @@ class ChallengeEvaluatorNode(Node):
 
         # optional persistence if config carries challenge_id
         challenge_id = self._config.get('challenge_id')
+        judge_feedback = judge_feedback_from_input if is_judge_input else None
+        judge_rating_value = judge_rating if is_judge_input else None
         if challenge_id:
             try:
                 # Calculate elapsed time in milliseconds
@@ -157,11 +159,17 @@ class ChallengeEvaluatorNode(Node):
                 tokens_total = self.graph_runtime_state.total_tokens
 
                 # Extract judge_rating from details if available (for highest_rating strategy)
-                judge_rating = None
-                judge_feedback = None
                 if isinstance(details, dict):
-                    judge_rating = details.get('rating')
-                    judge_feedback = details.get('feedback')
+                    judge_rating_raw = details.get('rating')
+                    judge_feedback_raw = details.get('feedback')
+                    if judge_rating_raw is not None:
+                        judge_rating_value = int(judge_rating_raw)
+                    if (
+                        judge_feedback_raw is not None
+                        and isinstance(judge_feedback_raw, str)
+                        and judge_feedback_raw.strip()
+                    ):
+                        judge_feedback = str(judge_feedback_raw)
 
                 # Load challenge to check scoring strategy
                 challenge = db.session.get(Challenge, str(challenge_id))
@@ -209,7 +217,7 @@ class ChallengeEvaluatorNode(Node):
                         logger.error("Custom scorer failed: %s", e, exc_info=True)
                         # Continue with score=None on error
 
-                ChallengeService.record_attempt(
+                _ = ChallengeService.record_attempt(
                     tenant_id=self.tenant_id,
                     challenge_id=challenge_id,
                     end_user_id=None,
@@ -217,8 +225,8 @@ class ChallengeEvaluatorNode(Node):
                     workflow_run_id=None,
                     succeeded=ok,
                     score=score,
-                    judge_rating=judge_rating,
-                    judge_feedback=judge_feedback,
+                    judge_rating=judge_rating_value,
+                    judge_feedback=judge_feedback_from_input or judge_feedback,
                     tokens_total=tokens_total,
                     elapsed_ms=elapsed_ms,
                     session=db.session,
@@ -230,8 +238,8 @@ class ChallengeEvaluatorNode(Node):
         # Always provide all output variables to match frontend getOutputVars
         outputs: dict[str, Any] = {
             'challenge_succeeded': ok,
-            'judge_rating': 0,
-            'judge_feedback': '',
+            'judge_rating': judge_rating_value,
+            'judge_feedback': judge_feedback_from_input or judge_feedback or '',
             'message': '',
         }
 
@@ -251,8 +259,14 @@ class ChallengeEvaluatorNode(Node):
                 else:
                     outputs['message'] = f"Failed: {details.get('mode', 'evaluation')} did not match"
 
+        # also persist judge outputs onto runtime state so downstream consumers can access them
+        if outputs['judge_feedback']:
+            self.graph_runtime_state.set_output('judge_feedback', outputs['judge_feedback'])
+        if outputs['judge_rating'] is not None:
+            self.graph_runtime_state.set_output('judge_rating', outputs['judge_rating'])
+        self.graph_runtime_state.set_output('challenge_succeeded', outputs['challenge_succeeded'])
+
         return NodeRunResult(
             status=WorkflowNodeExecutionStatus.SUCCEEDED,
             outputs=outputs,
         )
-

@@ -11,6 +11,10 @@ type ChatMessageEnd = {
     message?: string
     judge_feedback?: string
     judge_rating?: number
+    judge_outputs?: {
+      feedback?: string
+      message?: string
+    }
   }
 }
 
@@ -60,6 +64,7 @@ export async function submitChallengeAttempt(
   appSiteCode: string | undefined,
   appMode: string,
   userInput: string,
+  challengeGoal?: string,
   callbacks?: ChallengeAttemptCallbacks,
 ): Promise<ChallengeAttemptResult> {
   if (!appSiteCode)
@@ -114,6 +119,7 @@ export async function submitChallengeAttempt(
     let aggregatedText = ''
     let finalOutputs: Record<string, any> | undefined
     let finalMessage: string | undefined
+    let extractedJudgeFeedback: string | undefined
     let isSettled = false
     const releaseAbortController = () => {
       callbacks?.onAbortController?.(null)
@@ -141,8 +147,12 @@ export async function submitChallengeAttempt(
       const outputs = finalOutputs || {}
       const successFlag = Boolean(outputs.challenge_succeeded)
       const rating = outputs.judge_rating ?? outputs.rating
-      const feedback = outputs.judge_feedback || outputs.message || finalMessage || aggregatedText
-      const message = feedback || (successFlag ? 'Challenge passed!' : 'Challenge not passed.')
+      const feedback = extractedJudgeFeedback
+        ?? (typeof outputs.judge_feedback === 'string' && outputs.judge_feedback.trim().length > 0
+          ? outputs.judge_feedback
+          : undefined)
+      const fallbackMessage = outputs.message || finalMessage || aggregatedText
+      const message = feedback || fallbackMessage || (successFlag ? 'Challenge passed!' : 'Challenge not passed.')
       return {
         success: successFlag,
         rating,
@@ -178,58 +188,75 @@ export async function submitChallengeAttempt(
       },
     }
 
-    if (isChatApp) {
-      ssePost(
-        '/chat-messages',
-        {
-          body: {
-            query: userInput,
-            inputs: {},
-            response_mode: 'streaming',
-            conversation_id: '',
-          },
+    const endpoint = isChatApp ? '/chat-messages' : '/workflows/run'
+    const body = isChatApp
+      ? {
+        query: userInput,
+        inputs: {
+          challenge_goal: challengeGoal,
         },
-        {
-          ...commonOptions,
-          onData: (message: string) => {
-            aggregatedText += message
-            emitStreamUpdate()
-          },
-          onMessageReplace: (messageReplace) => {
-            aggregatedText = messageReplace.answer
-            emitStreamUpdate()
-          },
-          onMessageEnd: (messageEnd) => {
-            const metadata = (messageEnd as ChatMessageEnd).metadata
-            if (metadata?.outputs)
-              finalOutputs = metadata.outputs
-            const endMessage = metadata?.answer || metadata?.message || metadata?.judge_feedback
-            if (endMessage) {
-              aggregatedText = endMessage
-              emitStreamUpdate()
-            }
-            if (metadata?.judge_feedback)
-              finalMessage = metadata.judge_feedback
-            else if (metadata?.answer || metadata?.message)
-              finalMessage = metadata.answer || metadata.message
-          },
+        response_mode: 'streaming',
+        conversation_id: '',
+      }
+      : {
+        inputs: {
+          user_prompt: userInput,
+          challenge_goal: challengeGoal,
         },
-      )
-      return
-    }
+        response_mode: 'streaming',
+      }
 
     ssePost(
-      '/workflows/run',
+      endpoint,
       {
-        body: {
-          inputs: {
-            user_prompt: userInput,
-          },
-          response_mode: 'streaming',
-        },
+        body,
       },
       {
         ...commonOptions,
+        onData: (message: string) => {
+          aggregatedText += message
+          emitStreamUpdate()
+        },
+        onMessageReplace: (messageReplace) => {
+          aggregatedText = messageReplace.answer
+          emitStreamUpdate()
+        },
+        onMessageEnd: (messageEnd) => {
+          const metadata = (messageEnd as ChatMessageEnd).metadata
+          if (metadata?.outputs) {
+            finalOutputs = {
+              ...(finalOutputs || {}),
+              ...metadata.outputs,
+            }
+            const metaFeedback = metadata.outputs?.judge_feedback
+            if (typeof metaFeedback === 'string' && metaFeedback.trim().length > 0)
+              extractedJudgeFeedback = extractedJudgeFeedback || metaFeedback
+            const outputsMessage = metadata.outputs?.message
+            if (typeof outputsMessage === 'string' && outputsMessage.trim().length > 0) {
+              aggregatedText = outputsMessage
+              emitStreamUpdate()
+            }
+          }
+
+          if (!extractedJudgeFeedback && metadata?.judge_feedback && metadata.judge_feedback.trim().length > 0)
+            extractedJudgeFeedback = metadata.judge_feedback
+
+          if (metadata?.judge_outputs) {
+            if (!extractedJudgeFeedback && typeof metadata.judge_outputs.feedback === 'string' && metadata.judge_outputs.feedback.trim().length > 0)
+              extractedJudgeFeedback = metadata.judge_outputs.feedback
+            const judgeMessage = metadata.judge_outputs.message
+            if (typeof judgeMessage === 'string' && judgeMessage.trim().length > 0) {
+              aggregatedText = judgeMessage
+              emitStreamUpdate()
+            }
+          }
+
+          const endMessage = metadata?.answer || metadata?.message
+          if (endMessage) {
+            aggregatedText = endMessage
+            emitStreamUpdate()
+          }
+        },
         onTextChunk: (chunk) => {
           const text = (chunk as any)?.data?.text || ''
           if (text) {
@@ -239,14 +266,26 @@ export async function submitChallengeAttempt(
         },
         onWorkflowFinished: ({ data }) => {
           const resultData = (data as WorkflowFinishedResponse['data']) || {}
-          if (resultData.outputs)
-            finalOutputs = resultData.outputs
-          const message = resultData.outputs?.judge_feedback || resultData.outputs?.message
-          if (message) {
-            aggregatedText = message
-            emitStreamUpdate()
+          if (resultData.outputs) {
+            finalOutputs = {
+              ...(finalOutputs || {}),
+              ...resultData.outputs,
+            }
+            const feedback = resultData.outputs.judge_feedback
+            if (typeof feedback === 'string' && feedback.trim().length > 0)
+              extractedJudgeFeedback = extractedJudgeFeedback || feedback
+            const message = resultData.outputs.message
+            if (typeof message === 'string' && message.trim().length > 0) {
+              aggregatedText = message
+              emitStreamUpdate()
+            }
           }
-          finalMessage = message || finalMessage
+          else if ((data as any)?.metadata?.judge_feedback) {
+            // Some workflows may emit judge feedback under metadata instead of outputs
+            const judgeFeedback = (data as any).metadata.judge_feedback
+            if (typeof judgeFeedback === 'string' && judgeFeedback.trim().length > 0)
+              extractedJudgeFeedback = extractedJudgeFeedback || judgeFeedback
+          }
         },
       },
     )

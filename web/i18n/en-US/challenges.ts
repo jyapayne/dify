@@ -54,6 +54,10 @@ export default {
     awaitingResponse: 'Waiting for the model to respond…',
     processing: 'Processing…',
     submitButton: 'Submit',
+    defaultSuccessMessage: 'Challenge passed!',
+    defaultFailureMessage: 'Challenge not passed.',
+    ratingLine: 'Judge rating: {{rating}}/10',
+    judgeFeedbackLine: 'Judge feedback: {{feedback}}',
   },
   leaderboard: {
     title: 'Leaderboard',

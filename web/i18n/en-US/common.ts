@@ -12,6 +12,7 @@ const translation = {
     create: 'Created',
     remove: 'Removed',
   },
+  loading: 'Loading…',
   operation: {
     create: 'Create',
     confirm: 'Confirm',

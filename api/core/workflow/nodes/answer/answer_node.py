@@ -45,9 +45,18 @@ class AnswerNode(Node):
     def _run(self) -> NodeRunResult:
         segments = self.graph_runtime_state.variable_pool.convert_template(self._node_data.answer)
         files = self._extract_files_from_segments(segments.value)
+        # Merge answer outputs into existing workflow outputs so upstream metadata (e.g. judge feedback)
+        # is preserved and included in the final workflow_finished payload.
+        existing_outputs = self.graph_runtime_state.outputs
+        merged_outputs: dict[str, Any] = {
+            **existing_outputs,
+            'answer': segments.markdown,
+            'files': ArrayFileSegment(value=files),
+        }
+        self.graph_runtime_state.outputs = merged_outputs
         return NodeRunResult(
             status=WorkflowNodeExecutionStatus.SUCCEEDED,
-            outputs={"answer": segments.markdown, "files": ArrayFileSegment(value=files)},
+            outputs=merged_outputs,
         )
 
     def _extract_files_from_segments(self, segments: Sequence[Segment]):
