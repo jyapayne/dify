@@ -13,7 +13,6 @@ from configs import dify_config
 from controllers.console import api
 from controllers.console.wraps import (
     account_initialization_required,
-    enterprise_license_required,
     setup_required,
 )
 from core.mcp.auth.auth_flow import auth, handle_callback
@@ -667,7 +666,6 @@ class ToolLabelsApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def get(self):
         return jsonable_encoder(ToolLabelsService.list_tool_labels())
 

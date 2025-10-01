@@ -129,6 +129,10 @@ from .workspace import (
     workspace,
 )
 
+# Import custom challenge controllers
+from . import challenges as challenges
+from . import red_blue_challenges as red_blue_challenges
+
 api.add_namespace(console_ns)
 
 __all__ = [
@@ -204,4 +208,6 @@ __all__ = [
     "workflow_run",
     "workflow_statistic",
     "workspace",
+    "challenges",
+    "red_blue_challenges",
 ]

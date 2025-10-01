@@ -43,6 +43,12 @@ import DataSourcePanel from './data-source/panel'
 import KnowledgeBaseNode from './knowledge-base/node'
 import KnowledgeBasePanel from './knowledge-base/panel'
 import { TransferMethod } from '@/types/app'
+import ChallengeEvaluatorNode from './challenge-evaluator/node'
+import ChallengeEvaluatorPanel from './challenge-evaluator/panel'
+import JudgingLLMNode from './judging-llm/node'
+import JudgingLLMPanel from './judging-llm/panel'
+import TeamChallengeNode from './team-challenge/node'
+import TeamChallengePanel from './team-challenge/panel'
 
 export const NodeComponentMap: Record<string, ComponentType<any>> = {
   [BlockEnum.Start]: StartNode,
@@ -67,6 +73,11 @@ export const NodeComponentMap: Record<string, ComponentType<any>> = {
   [BlockEnum.Agent]: AgentNode,
   [BlockEnum.DataSource]: DataSourceNode,
   [BlockEnum.KnowledgeBase]: KnowledgeBaseNode,
+  [BlockEnum.ChallengeEvaluator]: ChallengeEvaluatorNode,
+  [BlockEnum.JudgingLLM]: JudgingLLMNode,
+  [BlockEnum.TeamChallenge]: TeamChallengeNode,
+  // Legacy alias for renamed node
+  'prompt-challenge': ChallengeEvaluatorNode,
 }
 
 export const PanelComponentMap: Record<string, ComponentType<any>> = {
@@ -92,6 +103,11 @@ export const PanelComponentMap: Record<string, ComponentType<any>> = {
   [BlockEnum.Agent]: AgentPanel,
   [BlockEnum.DataSource]: DataSourcePanel,
   [BlockEnum.KnowledgeBase]: KnowledgeBasePanel,
+  [BlockEnum.ChallengeEvaluator]: ChallengeEvaluatorPanel,
+  [BlockEnum.JudgingLLM]: JudgingLLMPanel,
+  [BlockEnum.TeamChallenge]: TeamChallengePanel,
+  // Legacy alias for renamed node
+  'prompt-challenge': ChallengeEvaluatorPanel,
 }
 
 export const CUSTOM_NODE_TYPE = 'custom'

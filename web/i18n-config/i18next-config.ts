@@ -23,6 +23,7 @@ const NAMESPACES = [
   'app-overview',
   'app',
   'billing',
+  'challenges',
   'common',
   'custom',
   'dataset-creation',

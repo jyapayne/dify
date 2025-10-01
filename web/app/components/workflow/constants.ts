@@ -61,6 +61,7 @@ export const SUPPORT_OUTPUT_VARS_NODE = [
   BlockEnum.ParameterExtractor, BlockEnum.Iteration, BlockEnum.Loop,
   BlockEnum.DocExtractor, BlockEnum.ListFilter,
   BlockEnum.Agent, BlockEnum.DataSource,
+  BlockEnum.ChallengeEvaluator, BlockEnum.JudgingLLM, BlockEnum.TeamChallenge,
 ]
 
 export const AGENT_OUTPUT_STRUCT: Var[] = [

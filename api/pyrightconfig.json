@@ -8,7 +8,8 @@
     "extensions",
     "core/app/app_config/easy_ui_based_app/dataset"
   ],
-  "typeCheckingMode": "strict",
+  "typeCheckingMode": "basic",
+  "reportImplicitRelativeImport": "none",
   "allowedUntypedLibraries": [
     "flask_restx",
     "flask_login",

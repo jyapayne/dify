@@ -58,6 +58,9 @@ class NodeType(StrEnum):
     DOCUMENT_EXTRACTOR = "document-extractor"
     LIST_OPERATOR = "list-operator"
     AGENT = "agent"
+    CHALLENGE_EVALUATOR = "challenge-evaluator"
+    JUDGING_LLM = "judging-llm"
+    TEAM_CHALLENGE = "team-challenge"
 
 
 class NodeExecutionType(StrEnum):

@@ -645,6 +645,41 @@ const formatItem = (
       }) as Var[]
       break
     }
+
+    case BlockEnum.JudgingLLM:
+    case BlockEnum.ChallengeEvaluator:
+    case BlockEnum.TeamChallenge: {
+      // Synchronously get outputs if getOutputVars is defined
+      const nodeType = data.type
+      if (nodeType === BlockEnum.JudgingLLM) {
+        res.vars = [
+          { variable: 'judge_passed', type: VarType.boolean },
+          { variable: 'judge_rating', type: VarType.number },
+          { variable: 'judge_feedback', type: VarType.string },
+          { variable: 'judge_raw', type: VarType.object },
+        ]
+      }
+      else if (nodeType === BlockEnum.ChallengeEvaluator) {
+        res.vars = [
+          { variable: 'challenge_succeeded', type: VarType.boolean },
+          { variable: 'judge_rating', type: VarType.number },
+          { variable: 'judge_feedback', type: VarType.string },
+          { variable: 'message', type: VarType.string },
+        ]
+      }
+      else if (nodeType === BlockEnum.TeamChallenge) {
+        res.vars = [
+          { variable: 'team', type: VarType.string },
+          { variable: 'judge_passed', type: VarType.boolean },
+          { variable: 'judge_rating', type: VarType.number },
+          { variable: 'judge_feedback', type: VarType.string },
+          { variable: 'categories', type: VarType.object },
+          { variable: 'team_points', type: VarType.number },
+          { variable: 'total_points', type: VarType.number },
+        ]
+      }
+      break
+    }
   }
 
   const { error_strategy } = data

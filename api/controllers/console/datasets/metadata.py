@@ -5,7 +5,7 @@ from flask_restx import Resource, marshal_with, reqparse
 from werkzeug.exceptions import NotFound
 
 from controllers.console import console_ns
-from controllers.console.wraps import account_initialization_required, enterprise_license_required, setup_required
+from controllers.console.wraps import account_initialization_required, setup_required
 from fields.dataset_fields import dataset_metadata_fields
 from libs.login import login_required
 from services.dataset_service import DatasetService
@@ -21,7 +21,6 @@ class DatasetMetadataCreateApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     @marshal_with(dataset_metadata_fields)
     def post(self, dataset_id):
         parser = reqparse.RequestParser()
@@ -42,7 +41,6 @@ class DatasetMetadataCreateApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def get(self, dataset_id):
         dataset_id_str = str(dataset_id)
         dataset = DatasetService.get_dataset(dataset_id_str)
@@ -56,7 +54,6 @@ class DatasetMetadataApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     @marshal_with(dataset_metadata_fields)
     def patch(self, dataset_id, metadata_id):
         parser = reqparse.RequestParser()
@@ -77,7 +74,6 @@ class DatasetMetadataApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def delete(self, dataset_id, metadata_id):
         dataset_id_str = str(dataset_id)
         metadata_id_str = str(metadata_id)
@@ -95,7 +91,6 @@ class DatasetMetadataBuiltInFieldApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def get(self):
         built_in_fields = MetadataService.get_built_in_fields()
         return {"fields": built_in_fields}, 200
@@ -106,7 +101,6 @@ class DatasetMetadataBuiltInFieldActionApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def post(self, dataset_id, action: Literal["enable", "disable"]):
         dataset_id_str = str(dataset_id)
         dataset = DatasetService.get_dataset(dataset_id_str)
@@ -126,7 +120,6 @@ class DocumentMetadataEditApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def post(self, dataset_id):
         dataset_id_str = str(dataset_id)
         dataset = DatasetService.get_dataset(dataset_id_str)

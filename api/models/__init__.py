@@ -91,6 +91,8 @@ from .workflow import (
     WorkflowRun,
     WorkflowType,
 )
+from .challenge import Challenge, ChallengeAttempt
+from .red_blue import RedBlueChallenge, TeamSubmission, TeamPairing
 
 __all__ = [
     "APIBasedExtension",
@@ -181,4 +183,9 @@ __all__ = [
     "WorkflowRunTriggeredFrom",
     "WorkflowToolProvider",
     "WorkflowType",
+    "Challenge",
+    "ChallengeAttempt",
+    "RedBlueChallenge",
+    "TeamSubmission",
+    "TeamPairing",
 ]

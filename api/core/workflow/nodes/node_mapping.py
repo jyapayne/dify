@@ -24,6 +24,9 @@ from core.workflow.nodes.tool import ToolNode
 from core.workflow.nodes.variable_aggregator import VariableAggregatorNode
 from core.workflow.nodes.variable_assigner.v1 import VariableAssignerNode as VariableAssignerNodeV1
 from core.workflow.nodes.variable_assigner.v2 import VariableAssignerNode as VariableAssignerNodeV2
+from core.workflow.nodes.challenge_evaluator.node import ChallengeEvaluatorNode
+from core.workflow.nodes.judging_llm.node import JudgingLLMNode
+from core.workflow.nodes.team_challenge.node import TeamChallengeNode
 
 LATEST_VERSION = "latest"
 
@@ -141,5 +144,17 @@ NODE_TYPE_CLASSES_MAPPING: Mapping[NodeType, Mapping[str, type[Node]]] = {
     NodeType.KNOWLEDGE_INDEX: {
         LATEST_VERSION: KnowledgeIndexNode,
         "1": KnowledgeIndexNode,
+    },
+    NodeType.CHALLENGE_EVALUATOR: {
+        LATEST_VERSION: ChallengeEvaluatorNode,
+        "1": ChallengeEvaluatorNode,
+    },
+    NodeType.JUDGING_LLM: {
+        LATEST_VERSION: JudgingLLMNode,
+        "1": JudgingLLMNode,
+    },
+    NodeType.TEAM_CHALLENGE: {
+        LATEST_VERSION: TeamChallengeNode,
+        "1": TeamChallengeNode,
     },
 }

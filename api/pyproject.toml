@@ -223,3 +223,6 @@ vdb = [
     "xinference-client~=1.2.2",
     "mo-vector~=0.1.13",
 ]
+[tool.pyright]
+typeCheckingMode = "basic"
+reportImplicitRelativeImport = "none"

@@ -62,6 +62,8 @@ export const useAvailableNodesMetaData = () => {
       nodesMap: {
         ...availableNodesMetaDataMap,
         [BlockEnum.VariableAssigner]: availableNodesMetaDataMap?.[BlockEnum.VariableAggregator],
+        // Legacy alias for renamed node
+        'prompt-challenge': availableNodesMetaDataMap?.[BlockEnum.ChallengeEvaluator],
       },
     }
   }, [availableNodesMetaData, availableNodesMetaDataMap])

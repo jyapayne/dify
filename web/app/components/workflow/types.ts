@@ -50,6 +50,9 @@ export enum BlockEnum {
   DataSource = 'datasource',
   DataSourceEmpty = 'datasource-empty',
   KnowledgeBase = 'knowledge-index',
+  ChallengeEvaluator = 'challenge-evaluator',
+  JudgingLLM = 'judging-llm',
+  TeamChallenge = 'team-challenge',
 }
 
 export enum ControlMode {

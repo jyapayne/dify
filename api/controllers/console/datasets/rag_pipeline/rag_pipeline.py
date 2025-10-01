@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from controllers.console import console_ns
 from controllers.console.wraps import (
     account_initialization_required,
-    enterprise_license_required,
     knowledge_pipeline_publish_enabled,
     setup_required,
 )
@@ -37,7 +36,6 @@ class PipelineTemplateListApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def get(self):
         type = request.args.get("type", default="built-in", type=str)
         language = request.args.get("language", default="en-US", type=str)
@@ -51,7 +49,6 @@ class PipelineTemplateDetailApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def get(self, template_id: str):
         type = request.args.get("type", default="built-in", type=str)
         rag_pipeline_service = RagPipelineService()
@@ -64,7 +61,6 @@ class CustomizedPipelineTemplateApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def patch(self, template_id: str):
         parser = reqparse.RequestParser()
         parser.add_argument(
@@ -95,7 +91,6 @@ class CustomizedPipelineTemplateApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def delete(self, template_id: str):
         RagPipelineService.delete_customized_pipeline_template(template_id)
         return 200
@@ -103,7 +98,6 @@ class CustomizedPipelineTemplateApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     def post(self, template_id: str):
         with Session(db.engine) as session:
             template = (
@@ -120,7 +114,6 @@ class PublishCustomizedPipelineTemplateApi(Resource):
     @setup_required
     @login_required
     @account_initialization_required
-    @enterprise_license_required
     @knowledge_pipeline_publish_enabled
     def post(self, pipeline_id: str):
         parser = reqparse.RequestParser()

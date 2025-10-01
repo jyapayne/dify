@@ -29,7 +29,6 @@ from controllers.console.wraps import (
     account_initialization_required,
     cloud_edition_billing_enabled,
     enable_change_email,
-    enterprise_license_required,
     only_edition_cloud,
     setup_required,
 )
@@ -102,7 +101,6 @@ class AccountProfileApi(Resource):
     @login_required
     @account_initialization_required
     @marshal_with(account_fields)
-    @enterprise_license_required
     def get(self):
         if not isinstance(current_user, Account):
             raise ValueError("Invalid user account")

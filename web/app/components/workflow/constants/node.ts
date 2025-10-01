@@ -20,6 +20,9 @@ import httpRequestDefault from '@/app/components/workflow/nodes/http/default'
 import parameterExtractorDefault from '@/app/components/workflow/nodes/parameter-extractor/default'
 import listOperatorDefault from '@/app/components/workflow/nodes/list-operator/default'
 import toolDefault from '@/app/components/workflow/nodes/tool/default'
+import challengeEvaluatorDefault from '@/app/components/workflow/nodes/challenge-evaluator/default'
+import judgingLLMDefault from '@/app/components/workflow/nodes/judging-llm/default'
+import teamChallengeDefault from '@/app/components/workflow/nodes/team-challenge/default'
 
 export const WORKFLOW_COMMON_NODES = [
   llmDefault,
@@ -41,4 +44,7 @@ export const WORKFLOW_COMMON_NODES = [
   httpRequestDefault,
   listOperatorDefault,
   toolDefault,
+  challengeEvaluatorDefault,
+  judgingLLMDefault,
+  teamChallengeDefault,
 ]

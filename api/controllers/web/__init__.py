@@ -24,12 +24,15 @@ from . import (
     files,
     forgot_password,
     login,
+    register,
     message,
     passport,
     remote_files,
     saved_message,
     site,
     workflow,
+    challenges,
+    red_blue_challenges,
 )
 
 api.add_namespace(web_ns)
@@ -45,6 +48,7 @@ __all__ = [
     "files",
     "forgot_password",
     "login",
+    "register",
     "message",
     "passport",
     "remote_files",
@@ -52,4 +56,6 @@ __all__ = [
     "site",
     "web_ns",
     "workflow",
+    "challenges",
+    "red_blue_challenges",
 ]
