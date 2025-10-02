@@ -57,7 +57,8 @@ export default {
     defaultSuccessMessage: 'Challenge passed!',
     defaultFailureMessage: 'Challenge not passed.',
     ratingLine: 'Judge rating: {{rating}}/10',
-    judgeFeedbackLine: 'Judge feedback: {{feedback}}',
+    judgeFeedbackLine: '{{feedback}}',
+    modelThinking: 'Thinking',
   },
   leaderboard: {
     title: 'Leaderboard',

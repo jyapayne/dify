@@ -20,8 +20,9 @@ export default function ChallengeDetailPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [userInput, setUserInput] = useState('')
-  const [lastResult, setLastResult] = useState<{ success: boolean; message?: string; rating?: number } | null>(null)
+  const [lastResult, setLastResult] = useState<{ success: boolean; message?: string; rating?: number; thinking?: string } | null>(null)
   const [streamingText, setStreamingText] = useState('')
+  const [streamingThinking, setStreamingThinking] = useState('')
   const [hasStreamingResult, setHasStreamingResult] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
 
@@ -66,6 +67,30 @@ export default function ChallengeDetailPage() {
     stopStreaming()
   }, [stopStreaming])
 
+  const parseModelOutput = useCallback((text: string) => {
+    if (!text)
+      return { thinking: '', response: '' }
+
+    const thinkStart = text.toLowerCase().indexOf('<think>')
+    if (thinkStart === -1)
+      return { thinking: '', response: text.trim() }
+
+    const beforeThink = text.slice(0, thinkStart)
+    const afterThinkStart = text.slice(thinkStart + 7) // length of '<think>'
+    const thinkEndRelative = afterThinkStart.toLowerCase().indexOf('</think>')
+
+    if (thinkEndRelative === -1) {
+      const thinking = afterThinkStart.trim()
+      const response = beforeThink.trim()
+      return { thinking, response }
+    }
+
+    const thinking = afterThinkStart.slice(0, thinkEndRelative).trim()
+    const afterThink = afterThinkStart.slice(thinkEndRelative + 8) // length of '</think>'
+    const response = `${beforeThink}${afterThink}`.trim()
+    return { thinking, response }
+  }, [])
+
   const handleSubmit = async () => {
     if (!userInput.trim()) {
       Toast.notify({ type: 'error', message: 'Please enter a response' })
@@ -80,6 +105,7 @@ export default function ChallengeDetailPage() {
     setSubmitting(true)
     setLastResult(null)
     setStreamingText('')
+    setStreamingThinking('')
     setHasStreamingResult(false)
     try {
       const result = await submitChallengeAttempt(
@@ -91,7 +117,9 @@ export default function ChallengeDetailPage() {
         challenge.goal,
         {
           onStreamUpdate: (text) => {
-            setStreamingText(text)
+            const { thinking, response } = parseModelOutput(text)
+            setStreamingThinking(thinking)
+            setStreamingText(response)
             setHasStreamingResult(true)
           },
           onAbortController: (controller) => {
@@ -106,7 +134,9 @@ export default function ChallengeDetailPage() {
       )
 
       setHasStreamingResult(false)
-      setStreamingText(result.rawText)
+      const { thinking: finalThinking, response: finalResponse } = parseModelOutput(result.rawText)
+      setStreamingThinking(finalThinking)
+      setStreamingText(finalResponse)
 
       const judgeFeedback = typeof result.outputs?.judge_feedback === 'string' && result.outputs.judge_feedback.trim().length > 0
         ? result.outputs.judge_feedback
@@ -119,14 +149,16 @@ export default function ChallengeDetailPage() {
       const judgeFeedbackLine = judgeFeedback
         ? t('challenges.player.judgeFeedbackLine', { feedback: judgeFeedback, defaultValue: `${judgeFeedback}` })
         : ''
+      const { thinking, response } = parseModelOutput(judgeFeedback || fallbackExplanation)
       const combinedMessage = result.success
-        ? [judgeFeedback || fallbackExplanation || successFallback].filter(Boolean).join('\n')
-        : [judgeFeedbackLine || fallbackExplanation || failureFallback].filter(Boolean).join('\n')
+        ? [response || successFallback].filter(Boolean).join('\n')
+        : [judgeFeedbackLine || response || failureFallback].filter(Boolean).join('\n')
 
       setLastResult({
         success: result.success,
         message: combinedMessage,
         rating: result.rating,
+        thinking,
       })
 
       if (result.success) {
@@ -140,6 +172,7 @@ export default function ChallengeDetailPage() {
       console.error('Submission error:', e)
       setHasStreamingResult(false)
       setStreamingText('')
+      setStreamingThinking('')
       if (e?.name === 'AbortError')
         return
       if (!e?.__handled)
@@ -225,8 +258,16 @@ export default function ChallengeDetailPage() {
                       <RiLoader4Line className='h-4 w-4 animate-spin text-text-tertiary' />
                     )}
                   </div>
-                  <div className='mt-2 whitespace-pre-wrap text-sm text-text-primary'>
-                    {streamingText || t('challenges.player.awaitingResponse')}
+                  {streamingThinking && (
+                    <div className='mt-3 space-y-2 rounded-md border border-divider-subtle bg-components-panel-bg p-3'>
+                      <div className='text-xs font-medium uppercase tracking-wide text-text-tertiary'>
+                        {t('challenges.player.modelThinking', 'Thinking')}
+                      </div>
+                      <div className='whitespace-pre-wrap text-sm text-text-secondary'>{streamingThinking}</div>
+                    </div>
+                  )}
+                  <div className='mt-3 whitespace-pre-wrap text-sm text-text-primary'>
+                    {streamingText || (!streamingThinking && t('challenges.player.awaitingResponse'))}
                   </div>
                 </div>
               )}
@@ -243,8 +284,16 @@ export default function ChallengeDetailPage() {
                       <div className={`mb-1 font-medium ${lastResult.success ? 'text-util-colors-green-green-700' : 'text-util-colors-orange-orange-700'}`}>
                         {lastResult.success ? t('challenges.player.status.success') : t('challenges.player.status.failed')}
                       </div>
+                      {lastResult.thinking && (
+                        <div className='bg-components-panel-bg/60 mt-3 space-y-2 rounded-md border border-divider-subtle p-3'>
+                          <div className='text-xs font-medium uppercase tracking-wide text-text-tertiary'>
+                            {t('challenges.player.modelThinking', 'Thinking')}
+                          </div>
+                          <div className='whitespace-pre-wrap text-sm text-text-secondary'>{lastResult.thinking}</div>
+                        </div>
+                      )}
                       {lastResult.message && (
-                        <div className='whitespace-pre-wrap text-sm text-text-secondary'>{lastResult.message}</div>
+                        <div className='mt-3 whitespace-pre-wrap text-sm text-text-secondary'>{lastResult.message}</div>
                       )}
                       {lastResult.rating !== undefined && (
                         <div className='mt-2 text-sm text-text-tertiary'>
