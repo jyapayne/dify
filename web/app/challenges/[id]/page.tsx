@@ -3,28 +3,37 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useParams } from 'next/navigation'
-import { RiCheckLine, RiCloseLine, RiLoader4Line } from '@remixicon/react'
-import Leaderboard from '@/app/components/challenge/leaderboard'
-import Button from '@/app/components/base/button'
-import Textarea from '@/app/components/base/textarea'
 import Toast from '@/app/components/base/toast'
 import { fetchChallengeDetail, fetchChallengeLeaderboard, submitChallengeAttempt } from '@/service/challenges'
+import ChallengeNotFoundState from './components/challenge-not-found'
+import ChallengeHeader from './components/challenge-header'
+import GoalCard from './components/goal-card'
+import AttemptComposer from './components/attempt-composer'
+import SessionSummaryCard from './components/session-summary-card'
+import LeaderboardSection from './components/leaderboard-section'
+import LoadingState from './components/loading-state'
+import type { AttemptResult, ChallengeDetail, LeaderboardEntry, LiveOutputState } from './components/types'
 
 export default function ChallengeDetailPage() {
   const { t } = useTranslation()
   const params = useParams()
   const id = params?.id as string
 
-  const [challenge, setChallenge] = useState<any>(null)
-  const [leaderboard, setLeaderboard] = useState<any[]>([])
+  const [challenge, setChallenge] = useState<ChallengeDetail | null>(null)
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [userInput, setUserInput] = useState('')
-  const [lastResult, setLastResult] = useState<{ success: boolean; message?: string; rating?: number; thinking?: string } | null>(null)
+
   const [streamingText, setStreamingText] = useState('')
   const [streamingThinking, setStreamingThinking] = useState('')
+  const [attempts, setAttempts] = useState<AttemptResult[]>([])
   const [hasStreamingResult, setHasStreamingResult] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  const successCount = attempts.filter(attempt => attempt.success).length
+  const failureCount = attempts.length - successCount
+  const mostRecentAttempt = attempts[0]
 
   useEffect(() => {
     const load = async () => {
@@ -33,11 +42,12 @@ export default function ChallengeDetailPage() {
           fetchChallengeDetail(id),
           fetchChallengeLeaderboard(id),
         ])
-        setChallenge(detail)
-        setLeaderboard(leaders)
+        setChallenge(detail as ChallengeDetail)
+        setLeaderboard((leaders ?? []) as LeaderboardEntry[])
       }
-      catch (e: any) {
-        Toast.notify({ type: 'error', message: e.message || 'Failed to load challenge' })
+      catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to load challenge'
+        Toast.notify({ type: 'error', message })
       }
       finally {
         setLoading(false)
@@ -76,7 +86,7 @@ export default function ChallengeDetailPage() {
       return { thinking: '', response: text.trim() }
 
     const beforeThink = text.slice(0, thinkStart)
-    const afterThinkStart = text.slice(thinkStart + 7) // length of '<think>'
+    const afterThinkStart = text.slice(thinkStart + 7)
     const thinkEndRelative = afterThinkStart.toLowerCase().indexOf('</think>')
 
     if (thinkEndRelative === -1) {
@@ -86,7 +96,7 @@ export default function ChallengeDetailPage() {
     }
 
     const thinking = afterThinkStart.slice(0, thinkEndRelative).trim()
-    const afterThink = afterThinkStart.slice(thinkEndRelative + 8) // length of '</think>'
+    const afterThink = afterThinkStart.slice(thinkEndRelative + 8)
     const response = `${beforeThink}${afterThink}`.trim()
     return { thinking, response }
   }, [])
@@ -103,7 +113,6 @@ export default function ChallengeDetailPage() {
     }
     stopStreaming()
     setSubmitting(true)
-    setLastResult(null)
     setStreamingText('')
     setStreamingThinking('')
     setHasStreamingResult(false)
@@ -128,6 +137,7 @@ export default function ChallengeDetailPage() {
           onError: (message) => {
             setHasStreamingResult(false)
             setStreamingText('')
+            setStreamingThinking('')
             Toast.notify({ type: 'error', message })
           },
         },
@@ -140,7 +150,7 @@ export default function ChallengeDetailPage() {
 
       const judgeFeedback = typeof result.outputs?.judge_feedback === 'string' && result.outputs.judge_feedback.trim().length > 0
         ? result.outputs.judge_feedback
-        : (typeof result.message === 'string' && result.message.trim().length > 0 ? result.message : undefined)
+        : undefined
       const fallbackExplanation = typeof result.outputs?.message === 'string' && result.outputs.message.trim().length > 0
         ? result.outputs.message
         : ''
@@ -154,161 +164,89 @@ export default function ChallengeDetailPage() {
         ? [response || successFallback].filter(Boolean).join('\n')
         : [judgeFeedbackLine || response || failureFallback].filter(Boolean).join('\n')
 
-      setLastResult({
-        success: result.success,
-        message: combinedMessage,
-        rating: result.rating,
-        thinking,
-      })
+      setAttempts(prev => ([
+        {
+          success: result.success,
+          message: combinedMessage,
+          rating: result.rating,
+          thinking,
+          timestamp: Date.now(),
+        },
+        ...prev,
+      ]))
 
       if (result.success) {
         Toast.notify({ type: 'success', message: 'Challenge completed!' })
-        // Refresh leaderboard
         const leaders = await fetchChallengeLeaderboard(id)
-        setLeaderboard(leaders)
+        setLeaderboard((leaders ?? []) as LeaderboardEntry[])
       }
     }
-    catch (e: any) {
-      console.error('Submission error:', e)
+    catch (error: unknown) {
+      console.error('Submission error:', error)
       setHasStreamingResult(false)
       setStreamingText('')
       setStreamingThinking('')
-      if (e?.name === 'AbortError')
-        return
-      if (!e?.__handled)
-        Toast.notify({ type: 'error', message: e.message || 'Submission failed' })
+      if (error instanceof Error) {
+        if (error.name === 'AbortError')
+          return
+        if (!(error as any).__handled)
+          Toast.notify({ type: 'error', message: error.message || 'Submission failed' })
+      }
+      else {
+        Toast.notify({ type: 'error', message: 'Submission failed' })
+      }
     }
     finally {
       setSubmitting(false)
     }
   }
 
-  if (loading) {
-    return (
-      <div className='flex min-h-screen items-center justify-center bg-components-panel-bg'>
-        <div className='text-text-tertiary'>{t('common.loading')}</div>
-      </div>
-    )
-  }
+  if (loading)
+    return <LoadingState message={t('common.loading')} />
 
-  if (!challenge) {
-    return (
-      <div className='flex min-h-screen items-center justify-center bg-components-panel-bg'>
-        <div className='text-text-secondary'>Challenge not found</div>
-      </div>
-    )
+  if (!challenge)
+    return <ChallengeNotFoundState message={t('challenges.player.notFound', 'Challenge not found')} />
+
+  const liveOutputState: LiveOutputState = {
+    streamingText,
+    streamingThinking,
+    hasStreamingResult,
   }
 
   return (
     <div className='min-h-screen overflow-y-auto bg-components-panel-bg'>
       <div className='mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8'>
-        <div className='mb-8'>
-          <h1 className='mb-2 text-3xl font-bold text-text-primary'>{challenge.name}</h1>
-          {challenge.description && (
-            <p className='text-lg text-text-secondary'>{challenge.description}</p>
-          )}
-        </div>
+        <ChallengeHeader challenge={challenge} />
 
         <div className='grid gap-6 lg:grid-cols-3'>
           <div className='lg:col-span-2'>
-            {challenge.goal && (
-              <div className='mb-6 rounded-xl border border-divider-subtle bg-components-panel-bg p-6 shadow-xs'>
-                <h2 className='mb-2 text-sm font-medium uppercase tracking-wide text-text-tertiary'>
-                  {t('challenges.player.goal')}
-                </h2>
-                <p className='text-text-primary'>{challenge.goal}</p>
-              </div>
-            )}
-
-            <div className='rounded-xl border border-divider-subtle bg-components-panel-bg p-6 shadow-xs'>
-              <h2 className='mb-4 text-lg font-semibold text-text-primary'>
-                {t('challenges.player.yourAttempt')}
-              </h2>
-
-              <Textarea
-                value={userInput}
-                onChange={e => setUserInput(e.target.value)}
-                placeholder='Enter your response here...'
-                rows={8}
-                className='mb-4 w-full'
-              />
-
-              <Button
-                type='primary'
-                onClick={handleSubmit}
-                loading={submitting}
-                disabled={submitting || !userInput.trim()}
-                className='w-full'
-              >
-                {submitting ? (
-                  <>
-                    <RiLoader4Line className='mr-2 h-4 w-4 animate-spin' />
-                    {t('challenges.player.processing', 'Processing…')}
-                  </>
-                ) : (
-                  t('challenges.player.submitButton', 'Submit')
-                )}
-              </Button>
-
-              {(hasStreamingResult || streamingText) && (
-                <div className='bg-components-panel-bg/60 mt-4 rounded-lg border border-divider-subtle p-4'>
-                  <div className='flex items-center gap-2 text-sm font-medium text-text-secondary'>
-                    {t('challenges.player.liveOutput')}
-                    {hasStreamingResult && (
-                      <RiLoader4Line className='h-4 w-4 animate-spin text-text-tertiary' />
-                    )}
-                  </div>
-                  {streamingThinking && (
-                    <div className='mt-3 space-y-2 rounded-md border border-divider-subtle bg-components-panel-bg p-3'>
-                      <div className='text-xs font-medium uppercase tracking-wide text-text-tertiary'>
-                        {t('challenges.player.modelThinking', 'Thinking')}
-                      </div>
-                      <div className='whitespace-pre-wrap text-sm text-text-secondary'>{streamingThinking}</div>
-                    </div>
-                  )}
-                  <div className='mt-3 whitespace-pre-wrap text-sm text-text-primary'>
-                    {streamingText || (!streamingThinking && t('challenges.player.awaitingResponse'))}
-                  </div>
-                </div>
-              )}
-
-              {lastResult && (
-                <div className={`mt-4 rounded-lg border p-4 ${lastResult.success ? 'border-util-colors-green-green-500 bg-util-colors-green-green-50' : 'border-util-colors-orange-orange-500 bg-util-colors-orange-orange-50'}`}>
-                  <div className='flex items-start gap-3'>
-                    {lastResult.success ? (
-                      <RiCheckLine className='h-5 w-5 shrink-0 text-util-colors-green-green-600' />
-                    ) : (
-                      <RiCloseLine className='h-5 w-5 shrink-0 text-util-colors-orange-orange-600' />
-                    )}
-                    <div className='flex-1'>
-                      <div className={`mb-1 font-medium ${lastResult.success ? 'text-util-colors-green-green-700' : 'text-util-colors-orange-orange-700'}`}>
-                        {lastResult.success ? t('challenges.player.status.success') : t('challenges.player.status.failed')}
-                      </div>
-                      {lastResult.thinking && (
-                        <div className='bg-components-panel-bg/60 mt-3 space-y-2 rounded-md border border-divider-subtle p-3'>
-                          <div className='text-xs font-medium uppercase tracking-wide text-text-tertiary'>
-                            {t('challenges.player.modelThinking', 'Thinking')}
-                          </div>
-                          <div className='whitespace-pre-wrap text-sm text-text-secondary'>{lastResult.thinking}</div>
-                        </div>
-                      )}
-                      {lastResult.message && (
-                        <div className='mt-3 whitespace-pre-wrap text-sm text-text-secondary'>{lastResult.message}</div>
-                      )}
-                      {lastResult.rating !== undefined && (
-                        <div className='mt-2 text-sm text-text-tertiary'>
-                          {t('challenges.leaderboard.rating')}: {lastResult.rating}/10
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+            {challenge.goal && <GoalCard goal={challenge.goal} t={t} />}
+            <AttemptComposer
+              userInput={userInput}
+              onUserInputChange={value => setUserInput(value)}
+              onSubmit={handleSubmit}
+              submitting={submitting}
+              t={t}
+              liveOutput={liveOutputState}
+              attempts={attempts}
+            />
           </div>
 
           <div className='lg:col-span-1'>
-            <Leaderboard entries={leaderboard} strategy={challenge.scoring_strategy} />
+            <div className='space-y-6'>
+              <SessionSummaryCard
+                t={t}
+                attemptsTotal={attempts.length}
+                successCount={successCount}
+                failureCount={failureCount}
+                mostRecentAttempt={mostRecentAttempt}
+              />
+              <LeaderboardSection
+                leaderboard={leaderboard}
+                scoringStrategy={challenge.scoring_strategy}
+                emptyHint={t('challenges.player.leaderboardEmptyHint')}
+              />
+            </div>
           </div>
         </div>
       </div>
