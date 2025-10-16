@@ -149,5 +149,3 @@ class ChallengeDetailApi(Resource):
         db.session.delete(c)
         db.session.commit()
         return {"result": "success"}, 204
-
-

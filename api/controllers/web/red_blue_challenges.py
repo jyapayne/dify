@@ -82,4 +82,3 @@ class RedBlueLeaderboardApi(Resource):
             "blue_ratio": (float(blue or 0.0) / total) if total else 0.0,
         }
         return {"result": "success", "data": data}
-

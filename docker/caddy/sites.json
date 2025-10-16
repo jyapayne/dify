@@ -1,0 +1,137 @@
+{
+  "sites": [
+    {
+      "name": "dify",
+      "address": "${DIFY_ADDRESS:-dify.jojomaw.com}",
+      "https_redirect": "${DIFY_REDIRECT:-true}",
+      "auto_https": "${DIFY_AUTO_HTTPS:-true}",
+      "health_path": "/health",
+      "health_check": {
+        "url": "${DIFY_HEALTH_URL:-http://127.0.0.1/health}",
+        "skip": "${DIFY_SKIP_HEALTHCHECK:-false}"
+      },
+      "app_url": "${DIFY_APP_URL:-http://127.0.0.1}",
+      "log_file": "${LOG_DIR}/dify-access.log",
+      "acme_challenge": "${DIFY_ACME_CHALLENGE:-false}",
+      "headers": {
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-XSS-Protection": "1; mode=block",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+      },
+      "api_routes": [
+        {
+          "path": "/api/*",
+          "upstream": "${DIFY_API_UPSTREAM:-127.0.0.1:5001}"
+        },
+        {
+          "path": "/v1/*",
+          "upstream": "${DIFY_API_UPSTREAM:-127.0.0.1:5001}"
+        },
+        {
+          "path": "/console/api/*",
+          "upstream": "${DIFY_API_UPSTREAM:-127.0.0.1:5001}"
+        },
+        {
+          "path": "/files/*",
+          "upstream": "${DIFY_FILES_UPSTREAM:-127.0.0.1:5001}"
+        },
+        {
+          "path": "/mcp/*",
+          "upstream": "${DIFY_MCP_UPSTREAM:-127.0.0.1:5001}"
+        }
+      ],
+      "static_routes": [
+        {
+          "path": "/explore/*",
+          "root": "${DIFY_EXPLORE_ROOT:-/app/web}",
+          "browse": false
+        }
+      ],
+      "frontend": {
+        "type": "reverse_proxy",
+        "upstream": "${DIFY_FRONTEND_UPSTREAM:-127.0.0.1:3000}"
+      },
+      "hooks_route": {
+        "path": "/e/*",
+        "upstream": "${DIFY_PLUGIN_DAEMON_UPSTREAM:-127.0.0.1:5002}",
+        "headers_up": [
+          {"name": "Dify-Hook-Url", "value": "${DIFY_HOOK_URL_HEADER:-{scheme}://{host}{uri}}"}
+        ]
+      },
+      "cache_static": {
+        "paths": [
+          "*.js",
+          "*.css",
+          "*.png",
+          "*.jpg",
+          "*.jpeg",
+          "*.gif",
+          "*.ico",
+          "*.svg",
+          "*.woff",
+          "*.woff2",
+          "*.ttf",
+          "*.eot"
+        ],
+        "header": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "name": "hackaprompt",
+      "address": "${HACKAPROMPT_ADDRESS:-chat.jojomaw.com}",
+      "https_redirect": "${HACKAPROMPT_REDIRECT:-true}",
+      "auto_https": "${HACKAPROMPT_AUTO_HTTPS:-true}",
+      "health_path": "/health",
+      "health_check": {
+        "url": "${HACKAPROMPT_HEALTH_URL:-http://127.0.0.1:8080/health}",
+        "skip": "${HACKAPROMPT_SKIP_HEALTHCHECK:-false}"
+      },
+      "app_url": "${HACKAPROMPT_APP_URL:-http://127.0.0.1:8080}",
+      "log_file": "${LOG_DIR}/hackaprompt-access.log",
+      "acme_challenge": "${HACKAPROMPT_ACME_CHALLENGE:-false}",
+      "headers": {
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "X-XSS-Protection": "1; mode=block",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+      },
+      "api_routes": [
+        {
+          "path": "/api/*",
+          "upstream": "${HACKAPROMPT_API_UPSTREAM:-127.0.0.1:5501}"
+        }
+      ],
+      "static_routes": [
+        {
+          "path": "/images/*",
+          "root": "${HACKAPROMPT_APP_ROOT:-/opt/hackaprompt-chat-viewer}"
+        }
+      ],
+      "frontend": {
+        "type": "static",
+        "root": "${HACKAPROMPT_FRONTEND_ROOT:-/opt/hackaprompt-chat-viewer/frontend}",
+        "try_files": ["{path}", "{path}/", "/index.html"]
+      },
+      "cache_static": {
+        "paths": [
+          "*.js",
+          "*.css",
+          "*.png",
+          "*.jpg",
+          "*.jpeg",
+          "*.gif",
+          "*.ico",
+          "*.svg",
+          "*.woff",
+          "*.woff2",
+          "*.ttf",
+          "*.eot"
+        ],
+        "header": "public, max-age=31536000, immutable"
+      }
+    }
+  ]
+}

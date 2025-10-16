@@ -87,5 +87,3 @@ class RedBlueService:
         sess.add(pairing)
         sess.commit()
         return pairing
-
-

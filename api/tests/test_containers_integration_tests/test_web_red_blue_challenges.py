@@ -9,5 +9,3 @@ class TestWebRedBlueChallenges:
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["result"] == "success"
-
-

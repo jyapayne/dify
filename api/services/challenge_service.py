@@ -60,5 +60,3 @@ class ChallengeService:
         sess.add(attempt)
         sess.commit()
         return attempt
-
-

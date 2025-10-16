@@ -37,4 +37,3 @@ def test_record_attempt_creates_row(mocker):
     assert isinstance(attempt, ChallengeAttempt)
     session.add.assert_called_once()
     session.commit.assert_called_once()
-

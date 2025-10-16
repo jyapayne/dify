@@ -24,11 +24,7 @@ def test_submit_prompt_creates_submission(mocker):
 def test_select_counterparty_submission_latest_active(mocker):
     c = SimpleNamespace(id="cid")
     session = mocker.MagicMock()
-    qs = (
-        session.query.return_value.filter.return_value.order_by.return_value
-    )
+    qs = session.query.return_value.filter.return_value.order_by.return_value
     qs.first.return_value = SimpleNamespace(id="subid", team="blue")
     sub = RedBlueService.select_counterparty_submission(challenge=c, team="red", session=session)
     assert sub.team == "blue"
-
-

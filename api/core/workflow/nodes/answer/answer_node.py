@@ -50,8 +50,8 @@ class AnswerNode(Node):
         existing_outputs = self.graph_runtime_state.outputs
         merged_outputs: dict[str, Any] = {
             **existing_outputs,
-            'answer': segments.markdown,
-            'files': ArrayFileSegment(value=files),
+            "answer": segments.markdown,
+            "files": ArrayFileSegment(value=files),
         }
         self.graph_runtime_state.outputs = merged_outputs
         return NodeRunResult(

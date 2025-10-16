@@ -142,4 +142,3 @@ class RedBluePairingsApi(Resource):
                 for r in rows
             ],
         }
-

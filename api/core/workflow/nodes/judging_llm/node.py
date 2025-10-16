@@ -32,19 +32,19 @@ class JudgingLLMNode(Node):
         self._config: dict[str, Any] = data
 
     def _get_error_strategy(self) -> ErrorStrategy | None:
-        return getattr(self._node_data, 'error_strategy', None)
+        return getattr(self._node_data, "error_strategy", None)
 
     def _get_retry_config(self) -> RetryConfig:
-        return getattr(self._node_data, 'retry_config', RetryConfig())
+        return getattr(self._node_data, "retry_config", RetryConfig())
 
     def _get_title(self) -> str:
-        return getattr(self._node_data, 'title', 'Judging LLM')
+        return getattr(self._node_data, "title", "Judging LLM")
 
     def _get_description(self) -> str | None:
-        return getattr(self._node_data, 'desc', None)
+        return getattr(self._node_data, "desc", None)
 
     def _get_default_value_dict(self) -> dict[str, Any]:
-        return getattr(self._node_data, 'default_value_dict', {})
+        return getattr(self._node_data, "default_value_dict", {})
 
     def get_base_node_data(self) -> BaseNodeData:
         return self._node_data
@@ -55,12 +55,12 @@ class JudgingLLMNode(Node):
 
     def _run(self) -> NodeRunResult:
         # Placeholder with FE-compatible keys. Extract inputs for future wiring.
-        inputs_cfg = self._config.get('inputs') or {}
+        inputs_cfg = self._config.get("inputs") or {}
         goal_selector = None
         response_selector = None
         if isinstance(inputs_cfg, dict):
-            goal_selector = inputs_cfg.get('goal')
-            response_selector = inputs_cfg.get('response')
+            goal_selector = inputs_cfg.get("goal")
+            response_selector = inputs_cfg.get("response")
 
         # Attempt to read variables (not used in placeholder decision)
         _ = None
@@ -73,31 +73,32 @@ class JudgingLLMNode(Node):
             pass
 
         outputs = {
-            'judge_passed': False,
-            'judge_rating': 0,
-            'judge_feedback': '',
+            "judge_passed": False,
+            "judge_rating": 0,
+            "judge_feedback": "",
         }
 
         # If model config and rubric provided, invoke LLM synchronously to judge
-        judge_model = self._config.get('judge_model') or {}
-        rubric = self._config.get('rubric_prompt_template') or ''
-        provider = (judge_model or {}).get('provider')
-        model_name = (judge_model or {}).get('name')
-        completion_params = (judge_model or {}).get('completion_params') or {}
+        judge_model = self._config.get("judge_model") or {}
+        rubric = self._config.get("rubric_prompt_template") or ""
+        provider = (judge_model or {}).get("provider")
+        model_name = (judge_model or {}).get("name")
+        completion_params = (judge_model or {}).get("completion_params") or {}
 
         def _segment_to_text(seg: Any) -> str:
             try:
                 # Many variable types expose .text
-                if hasattr(seg, 'text'):
+                if hasattr(seg, "text"):
                     return str(seg.text)
                 if isinstance(seg, (dict, list)):
                     return json.dumps(seg, ensure_ascii=False)
                 return str(seg)
             except Exception:
-                return ''
+                return ""
 
         # Debug: log what we're checking
         import logging
+
         logger = logging.getLogger(__name__)
         logger.info(
             "JudgingLLM check - provider: %s, model: %s, rubric_len: %s, response_selector: %s",
@@ -117,9 +118,7 @@ class JudgingLLMNode(Node):
                 json_template = '{"passed": boolean, "rating": number (0-10), "feedback": string}'
 
                 prompt_body = (
-                    f"Goal:\n{goal_text}\n\n"
-                    f"Response:\n{response_text}\n\n"
-                    f"Return JSON with rating 0-10: {json_template}"
+                    f"Goal:\n{goal_text}\n\nResponse:\n{response_text}\n\nReturn JSON with rating 0-10: {json_template}"
                 )
 
                 prompt_messages = [
@@ -141,14 +140,14 @@ class JudgingLLMNode(Node):
                     user=self.user_id,
                 )  # type: ignore
                 # Extract text from result
-                text_out = ''
-                content = getattr(result.message, 'content', '')
+                text_out = ""
+                content = getattr(result.message, "content", "")
                 if isinstance(content, str):
                     text_out = content
                 elif isinstance(content, list):
                     for item in content:
-                        if getattr(item, 'type', None) == PromptMessageContentType.TEXT:
-                            text_out += str(getattr(item, 'data', ''))
+                        if getattr(item, "type", None) == PromptMessageContentType.TEXT:
+                            text_out += str(getattr(item, "data", ""))
                 else:
                     text_out = str(content)
 
@@ -162,22 +161,25 @@ class JudgingLLMNode(Node):
                     verdict = None
 
                 if isinstance(verdict, dict):
-                    outputs['judge_passed'] = bool(verdict.get('passed'))
-                    outputs['judge_rating'] = int(verdict.get('rating') or 0)
-                    outputs['judge_feedback'] = str(verdict.get('feedback') or '')
-                    outputs['judge_raw'] = json.dumps(verdict)
+                    outputs["judge_passed"] = bool(verdict.get("passed"))
+                    outputs["judge_rating"] = int(verdict.get("rating") or 0)
+                    outputs["judge_feedback"] = str(verdict.get("feedback") or "")
+                    outputs["judge_raw"] = json.dumps(verdict)
                 else:
                     # Fallback to simple rules if configured
-                    success_type = self._config.get('success_type')
-                    success_pattern = self._config.get('success_pattern')
+                    success_type = self._config.get("success_type")
+                    success_pattern = self._config.get("success_pattern")
                     if success_type and success_pattern:
-                        ok, _ = ChallengeService.evaluate_outcome(response_text, {
-                            'success_type': success_type,
-                            'success_pattern': success_pattern,
-                        })
-                        outputs['judge_passed'] = ok
-                        outputs['judge_rating'] = 10 if ok else 0
-                        outputs['judge_feedback'] = 'passed by rules' if ok else 'failed by rules'
+                        ok, _ = ChallengeService.evaluate_outcome(
+                            response_text,
+                            {
+                                "success_type": success_type,
+                                "success_pattern": success_pattern,
+                            },
+                        )
+                        outputs["judge_passed"] = ok
+                        outputs["judge_rating"] = 10 if ok else 0
+                        outputs["judge_feedback"] = "passed by rules" if ok else "failed by rules"
             except Exception as e:
                 # keep default outputs on error
                 logger.error("JudgingLLM error: %s", e, exc_info=True)
@@ -185,4 +187,3 @@ class JudgingLLMNode(Node):
         else:
             logger.warning("JudgingLLM skipped - missing required fields")
         return NodeRunResult(status=WorkflowNodeExecutionStatus.SUCCEEDED, outputs=outputs)
-

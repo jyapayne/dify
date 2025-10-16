@@ -111,4 +111,3 @@ class TeamPairing(Base):
         nullable=False,
         server_default=sa.func.current_timestamp(),
     )
-

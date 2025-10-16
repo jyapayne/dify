@@ -22,16 +22,18 @@ class ChallengeListApi(Resource):
                     select(Site).where(Site.app_id == c.app_id, Site.status == "normal")
                 ).scalar_one_or_none()
                 site_code = site.code if site else None
-            items.append({
-                "id": c.id,
-                "name": c.name,
-                "description": c.description,
-                "goal": c.goal,
-                "app_id": c.app_id,
-                "workflow_id": c.workflow_id,
-                "app_mode": app.mode if app else None,
-                "app_site_code": site_code,
-            })
+            items.append(
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "description": c.description,
+                    "goal": c.goal,
+                    "app_id": c.app_id,
+                    "workflow_id": c.workflow_id,
+                    "app_mode": app.mode if app else None,
+                    "app_site_code": site_code,
+                }
+            )
         return {"result": "success", "data": items}
 
 
@@ -73,28 +75,27 @@ class ChallengeLeaderboardApi(Resource):
         if not challenge:
             return {"result": "not_found"}, 404
 
-        scoring_strategy = challenge.scoring_strategy or 'highest_rating'
+        scoring_strategy = challenge.scoring_strategy or "highest_rating"
 
         # Build query based on scoring strategy
         q = db.session.query(ChallengeAttempt).filter(
-            ChallengeAttempt.challenge_id == str(challenge_id),
-            ChallengeAttempt.succeeded.is_(True)
+            ChallengeAttempt.challenge_id == str(challenge_id), ChallengeAttempt.succeeded.is_(True)
         )
 
         # Apply sorting based on strategy
-        if scoring_strategy == 'first':
+        if scoring_strategy == "first":
             # Earliest successful attempt wins
             q = q.order_by(ChallengeAttempt.created_at.asc())
-        elif scoring_strategy == 'fastest':
+        elif scoring_strategy == "fastest":
             # Lowest elapsed_ms wins
             q = q.order_by(ChallengeAttempt.elapsed_ms.asc().nullslast(), ChallengeAttempt.created_at.asc())
-        elif scoring_strategy == 'fewest_tokens':
+        elif scoring_strategy == "fewest_tokens":
             # Lowest tokens_total wins
             q = q.order_by(ChallengeAttempt.tokens_total.asc().nullslast(), ChallengeAttempt.created_at.asc())
-        elif scoring_strategy == 'highest_rating':
+        elif scoring_strategy == "highest_rating":
             # Highest judge_rating wins, ties broken by earliest
             q = q.order_by(ChallengeAttempt.judge_rating.desc().nullslast(), ChallengeAttempt.created_at.asc())
-        elif scoring_strategy == 'custom':
+        elif scoring_strategy == "custom":
             # Custom score field (computed by plugin)
             q = q.order_by(ChallengeAttempt.score.desc().nullslast(), ChallengeAttempt.created_at.asc())
         else:
@@ -116,5 +117,3 @@ class ChallengeLeaderboardApi(Resource):
             for r in rows
         ]
         return {"result": "success", "data": data}
-
-

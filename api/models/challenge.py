@@ -88,4 +88,3 @@ class ChallengeAttempt(Base):
         nullable=False,
         server_default=sa.func.current_timestamp(),
     )
-

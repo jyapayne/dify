@@ -32,19 +32,19 @@ class ChallengeEvaluatorNode(Node):
         self._config: dict[str, Any] = data
 
     def _get_error_strategy(self) -> ErrorStrategy | None:
-        return getattr(self._node_data, 'error_strategy', None)
+        return getattr(self._node_data, "error_strategy", None)
 
     def _get_retry_config(self) -> RetryConfig:
-        return getattr(self._node_data, 'retry_config', RetryConfig())
+        return getattr(self._node_data, "retry_config", RetryConfig())
 
     def _get_title(self) -> str:
-        return getattr(self._node_data, 'title', 'Challenge Evaluator')
+        return getattr(self._node_data, "title", "Challenge Evaluator")
 
     def _get_description(self) -> str | None:
-        return getattr(self._node_data, 'desc', None)
+        return getattr(self._node_data, "desc", None)
 
     def _get_default_value_dict(self) -> dict[str, Any]:
-        return getattr(self._node_data, 'default_value_dict', {})
+        return getattr(self._node_data, "default_value_dict", {})
 
     def get_base_node_data(self) -> BaseNodeData:
         return self._node_data
@@ -55,16 +55,16 @@ class ChallengeEvaluatorNode(Node):
 
     def _run(self) -> NodeRunResult:
         # Resolve response text from selector in config.inputs.response (frontend schema)
-        output_text = ''
+        output_text = ""
         source_selector = None
-        inputs_cfg = self._config.get('inputs') or {}
+        inputs_cfg = self._config.get("inputs") or {}
         if isinstance(inputs_cfg, dict):
-            source_selector = inputs_cfg.get('response')
+            source_selector = inputs_cfg.get("response")
         # fallback to older key if any
-        source_selector = source_selector or self._config.get('value_selector')
+        source_selector = source_selector or self._config.get("value_selector")
 
         # Check evaluation mode from config
-        evaluation_mode = self._config.get('evaluation_mode', 'rules')
+        evaluation_mode = self._config.get("evaluation_mode", "rules")
 
         logger.info("ChallengeEvaluator - evaluation_mode: %s, source_selector: %s", evaluation_mode, source_selector)
 
@@ -72,8 +72,8 @@ class ChallengeEvaluatorNode(Node):
         is_judge_input = False
         judge_passed = False
         judge_rating = 0
-        judge_feedback_from_input = ''
-        output_text = ''
+        judge_feedback_from_input = ""
+        output_text = ""
 
         def _segment_to_value(segment: Segment | None) -> Any:
             if segment is None:
@@ -86,13 +86,13 @@ class ChallengeEvaluatorNode(Node):
             return getattr(segment, "value", segment)
 
         # If evaluation_mode is 'llm-judge', try to read from upstream Judging LLM node
-        if evaluation_mode == 'llm-judge' and source_selector and len(source_selector) >= 1:
+        if evaluation_mode == "llm-judge" and source_selector and len(source_selector) >= 1:
             try:
                 node_id = source_selector[0]
                 # Retrieve judge outputs as Segments and convert to primitive values
-                passed_segment = self.graph_runtime_state.variable_pool.get([node_id, 'judge_passed'])
-                rating_segment = self.graph_runtime_state.variable_pool.get([node_id, 'judge_rating'])
-                feedback_segment = self.graph_runtime_state.variable_pool.get([node_id, 'judge_feedback'])
+                passed_segment = self.graph_runtime_state.variable_pool.get([node_id, "judge_passed"])
+                rating_segment = self.graph_runtime_state.variable_pool.get([node_id, "judge_rating"])
+                feedback_segment = self.graph_runtime_state.variable_pool.get([node_id, "judge_feedback"])
 
                 potential_judge_passed = _segment_to_value(passed_segment)
                 potential_judge_rating = _segment_to_value(rating_segment)
@@ -110,7 +110,7 @@ class ChallengeEvaluatorNode(Node):
                     is_judge_input = True
                     judge_passed = bool(potential_judge_passed)
                     judge_rating = int(potential_judge_rating or 0)
-                    judge_feedback_from_input = str(potential_judge_feedback or '')
+                    judge_feedback_from_input = str(potential_judge_feedback or "")
                     logger.info(
                         "ChallengeEvaluator - Judge input successfully read! passed=%s, rating=%s, feedback=%s",
                         judge_passed,
@@ -126,28 +126,28 @@ class ChallengeEvaluatorNode(Node):
             try:
                 segment = self.graph_runtime_state.variable_pool.get(source_selector)
                 if segment is None:
-                    output_text = ''
-                elif hasattr(segment, 'text'):
+                    output_text = ""
+                elif hasattr(segment, "text"):
                     output_text = segment.text
                 else:
-                    output_text = str(_segment_to_value(segment) or '')
+                    output_text = str(_segment_to_value(segment) or "")
             except Exception:
-                output_text = ''
+                output_text = ""
 
         # Evaluate based on mode
         if is_judge_input:
             ok = judge_passed
             details = {
-                'mode': 'llm-judge',
-                'rating': judge_rating,
-                'feedback': judge_feedback_from_input,
+                "mode": "llm-judge",
+                "rating": judge_rating,
+                "feedback": judge_feedback_from_input,
             }
         else:
             # Rules-based evaluation (only if not using judge input)
             ok, details = ChallengeService.evaluate_outcome(output_text, self._config)
 
         # optional persistence if config carries challenge_id
-        challenge_id = self._config.get('challenge_id')
+        challenge_id = self._config.get("challenge_id")
         judge_feedback = judge_feedback_from_input if is_judge_input else None
         judge_rating_value = judge_rating if is_judge_input else None
         if challenge_id:
@@ -160,8 +160,8 @@ class ChallengeEvaluatorNode(Node):
 
                 # Extract judge_rating from details if available (for highest_rating strategy)
                 if isinstance(details, dict):
-                    judge_rating_raw = details.get('rating')
-                    judge_feedback_raw = details.get('feedback')
+                    judge_rating_raw = details.get("rating")
+                    judge_feedback_raw = details.get("feedback")
                     if judge_rating_raw is not None:
                         judge_rating_value = int(judge_rating_raw)
                     if (
@@ -180,23 +180,23 @@ class ChallengeEvaluatorNode(Node):
                 score = None
 
                 # If custom scoring is configured, compute score using plugin
-                if challenge and challenge.scoring_strategy == 'custom':
+                if challenge and challenge.scoring_strategy == "custom":
                     try:
                         metrics = {
-                            'succeeded': ok,
-                            'tokens_total': tokens_total,
-                            'elapsed_ms': elapsed_ms,
-                            'rating': judge_rating,
-                            'created_at': int(time.time() * 1000),
+                            "succeeded": ok,
+                            "tokens_total": tokens_total,
+                            "elapsed_ms": elapsed_ms,
+                            "rating": judge_rating,
+                            "created_at": int(time.time() * 1000),
                         }
 
                         ctx = {
-                            'tenant_id': self.tenant_id,
-                            'app_id': self.app_id,
-                            'workflow_id': self.workflow_id,
-                            'challenge_id': str(challenge_id),
-                            'end_user_id': None,
-                            'timeout_ms': 5000,
+                            "tenant_id": self.tenant_id,
+                            "app_id": self.app_id,
+                            "workflow_id": self.workflow_id,
+                            "challenge_id": str(challenge_id),
+                            "end_user_id": None,
+                            "timeout_ms": 5000,
                         }
 
                         result = ChallengeScorerService.score_with_plugin(
@@ -207,11 +207,11 @@ class ChallengeEvaluatorNode(Node):
                             ctx=ctx,
                         )
 
-                        score = result.get('score')
+                        score = result.get("score")
                         logger.info(
                             "Custom scorer computed score: %s (details: %s)",
                             score,
-                            result.get('details'),
+                            result.get("details"),
                         )
                     except Exception as e:
                         logger.error("Custom scorer failed: %s", e, exc_info=True)
@@ -237,34 +237,34 @@ class ChallengeEvaluatorNode(Node):
 
         # Always provide all output variables to match frontend getOutputVars
         outputs: dict[str, Any] = {
-            'challenge_succeeded': ok,
-            'judge_rating': judge_rating_value,
-            'judge_feedback': judge_feedback_from_input or judge_feedback or '',
-            'message': '',
+            "challenge_succeeded": ok,
+            "judge_rating": judge_rating_value,
+            "judge_feedback": judge_feedback_from_input or judge_feedback or "",
+            "message": "",
         }
 
         # Override with actual values if evaluator provides them
         if isinstance(details, dict):
             logger.debug("ChallengeEvaluator - details: %s", details)
-            if 'rating' in details:
-                outputs['judge_rating'] = details.get('rating')
-            if 'feedback' in details:
-                outputs['judge_feedback'] = details.get('feedback')
-            if 'message' in details:
-                outputs['message'] = details.get('message')
+            if "rating" in details:
+                outputs["judge_rating"] = details.get("rating")
+            if "feedback" in details:
+                outputs["judge_feedback"] = details.get("feedback")
+            if "message" in details:
+                outputs["message"] = details.get("message")
             # If no explicit message, create one from evaluation details
-            if not outputs['message']:
+            if not outputs["message"]:
                 if ok:
-                    outputs['message'] = f"Success: {details.get('mode', 'evaluation')} matched"
+                    outputs["message"] = f"Success: {details.get('mode', 'evaluation')} matched"
                 else:
-                    outputs['message'] = f"Failed: {details.get('mode', 'evaluation')} did not match"
+                    outputs["message"] = f"Failed: {details.get('mode', 'evaluation')} did not match"
 
         # also persist judge outputs onto runtime state so downstream consumers can access them
-        if outputs['judge_feedback']:
-            self.graph_runtime_state.set_output('judge_feedback', outputs['judge_feedback'])
-        if outputs['judge_rating'] is not None:
-            self.graph_runtime_state.set_output('judge_rating', outputs['judge_rating'])
-        self.graph_runtime_state.set_output('challenge_succeeded', outputs['challenge_succeeded'])
+        if outputs["judge_feedback"]:
+            self.graph_runtime_state.set_output("judge_feedback", outputs["judge_feedback"])
+        if outputs["judge_rating"] is not None:
+            self.graph_runtime_state.set_output("judge_rating", outputs["judge_rating"])
+        self.graph_runtime_state.set_output("challenge_succeeded", outputs["challenge_succeeded"])
 
         return NodeRunResult(
             status=WorkflowNodeExecutionStatus.SUCCEEDED,
